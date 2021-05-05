@@ -19,7 +19,9 @@ Imports:
     sf,
     raster,
     rgdal,
-    rgeos
+    rgeos,
+    terra,
+    pbapply
 Depends:
     ggplot2,
     ggmap

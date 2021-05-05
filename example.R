@@ -1,10 +1,9 @@
-# library(tidyverse)
-# library(sf)
-#
-# source('R/utils.R')
-# source('R/check.R')
-
 library(creainventory)
+
+# For development only
+library(raster)
+library(sp)
+library(dplyr)
 
 # Point sources
 emission.d.power <- read.csv("example/power_emission_data.csv")
@@ -38,7 +37,7 @@ emission.farmland <- creainventory::combine(emission.d.farmland, support.sp.farm
 grid <- grid.read(filename="data/d04.grid.tif")
 
 
-# Create a single layer representing whole year
+# Create a stack representing a whole year x species
 r.power <- grid.rasterize(emission.power, grid)
 r.transport <- grid.rasterize(emission.transport, grid)
 r.farmland <- grid.rasterize(emission.farmland, grid)
