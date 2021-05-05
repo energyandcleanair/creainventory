@@ -203,7 +203,7 @@ grid.rasterize.lines <- function(emission.sp, grid, polls=NULL){
   # Chunking it to avoid rgeos_binpredfunc_prepared: maximum returned dense matrix size exceeded
   cutting_successful <- F
   chunk_size <- 1E10
-  while(cutting_successful){
+  while(!cutting_successful){
     tryCatch({
       rsp$chunk <- rsp$i_cell %/% chunk_size
       emission.sf <- sf::st_as_sf(emission.sp)
