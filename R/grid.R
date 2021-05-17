@@ -30,7 +30,7 @@ grid.rasterize <- function(emission.sp, grid, terra_or_raster="terra"){
 
   if(is.na(raster::crs(emission.sp))){
     warning("No CRS set in emission.sp. Assuming EPSG4326")
-    emission.sp <- so::spTransform(emission.sp, 4326)
+    emission.sp <- sp::spTransform(emission.sp, 4326)
   }
   print("Reprojecting...")
   emission.sp <- emission.sp %>%

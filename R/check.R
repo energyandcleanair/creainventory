@@ -15,7 +15,7 @@ check.fields <- function(d, required_fields){
 #' @examples
 check.emission.d <- function(d){
   check.fields(d, required_fields=c("id", "poll", "unit", "year", "emission"))
-  if(!is.numeric(d["emission"])) stop("emission should be numeric field")
+  if(!is.numeric(d$emission)) stop("emission should be numeric field")
   print("OK")
 }
 
