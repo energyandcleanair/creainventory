@@ -40,7 +40,9 @@ grid.rasterize <- function(emission.sp, grid, terra_or_raster="terra"){
   print("Reprojecting...")
   emission.sp <- emission.sp %>%
     sp::spTransform(raster::projection(grid))
+  print("Done")
 
+  print("Rasterizing...")
   # Cut if need be
   if("SpatialLinesDataFrame" %in% class(emission.sp)){
     r <- grid.rasterize.lines(emission.sp, grid)
@@ -53,6 +55,7 @@ grid.rasterize <- function(emission.sp, grid, terra_or_raster="terra"){
   if("SpatialPointsDataFrame" %in% class(emission.sp)){
     r <- grid.rasterize.points(emission.sp, grid)
   }
+  print("Done")
 
   return(r)
 }
