@@ -13,6 +13,7 @@ create_temporal_variation <- function(month_share=NULL,
   }
 }
 
+
 temporal.split_months <- function(r, month_shares){
 
   if(length(month_shares) != 12){

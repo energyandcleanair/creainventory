@@ -32,9 +32,14 @@ grid.rasterize <- function(emission.sp, grid, terra_or_raster="terra"){
     warning("No CRS set in emission.sp. Assuming EPSG4326")
     emission.sp <- sp::spTransform(emission.sp, 4326)
   }
+
+  # Only keep features with actual emissions to make things faster
+  emission.sp <- emission.sp[emission.sp$emission>0,]
+
+
   print("Reprojecting...")
   emission.sp <- emission.sp %>%
-    sp::spTransform(projection(grid))
+    sp::spTransform(raster::projection(grid))
 
   # Cut if need be
   if("SpatialLinesDataFrame" %in% class(emission.sp)){
@@ -151,7 +156,7 @@ grid.rasterize.points <- function(emission.sp, grid, polls=NULL){
     emission.sp <- emission.sp[emission.sp$poll %in% polls,]
   }
 
-  sps <- emission.sp %>% split(emission.sp$poll)
+  sps <- emission.sp %>% sp::split(emission.sp@data$poll)
 
   emission_stack <- lapply(sps[polls],
          function(x){
@@ -259,7 +264,7 @@ grid.rasterize.lines <- function(emission.sp, grid, polls=NULL){
 }
 
 
-grid.rasterize.polygons <- function(emission.sp, grid){
+grid.rasterize.polygons <- function(emission.sp, grid, polls=NULL){
 
   # r <- pbapply::pblapply(seq(nrow(emission.sp)),
   #                     function(i){
@@ -278,7 +283,7 @@ grid.rasterize.polygons <- function(emission.sp, grid){
     emission.sp <- emission.sp[emission.sp$poll %in% polls,]
   }
 
-  sps <- emission.sp %>% split(emission.sp$poll)
+  sps <- emission.sp %>% sp::split(emission.sp@data$poll)
 
   emission_stack <- lapply(sps[polls],
          function(x){

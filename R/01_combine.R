@@ -10,7 +10,7 @@
 #' @examples
 combine <- function(emission.d, support.sp){
   support.sp %>%
-    dplyr::left_join(emission.d, by="id") %>%
+    dplyr::right_join(emission.d, by="id") %>%
     group_by(id, poll) %>%
     do(mutate(., weight = .$weight / sum(.$weight))) %>%
     mutate(emission=emission*weight) %>%
