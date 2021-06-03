@@ -285,22 +285,36 @@ grid.rasterize.polygons <- function(emission.sp, grid, polls=NULL){
 
   sps <- emission.sp %>% sp::split(emission.sp@data$poll)
 
+  # Row by row
+  # emission_stack <- lapply(sps[polls],
+  #        function(x){
+  #          pbapply::pblapply(seq(nrow(x)),
+  #                            function(i){
+  #                              v <- terra::vect(x[i,])
+  #                              v$emission <- as.numeric(v$emission)
+  #                              ri <- terra::rasterize(v,
+  #                                                     terra::rast(grid),
+  #                                                     cover=T,
+  #                                                     background=0
+  #                              ) %>% raster::raster()
+  #                              ri * x$emission[i] / raster::cellStats(ri, "sum", na.rm=T)
+  #                            }) %>%
+  #            do.call(raster::stack,.) %>%
+  #            raster::calc(sum)
+  #        }) %>%
+  #   raster::stack()
+
+  # All in one go
   emission_stack <- lapply(sps[polls],
-         function(x){
-           pbapply::pblapply(seq(nrow(x)),
-                             function(i){
-                               v <- terra::vect(emission.sp[i,])
-                               v$emission <- as.numeric(v$emission)
-                               ri <- terra::rasterize(v,
-                                                      terra::rast(grid),
-                                                      cover=T,
-                                                      background=0
-                               ) %>% raster::raster()
-                               ri * emission.sp$emission[i] / raster::cellStats(ri, "sum", na.rm=T)
-                             }) %>%
-             do.call(raster::stack,.) %>%
-             raster::calc(sum)
-         }) %>%
+                           function(x){
+                             area <- exactextractr::coverage_fraction(x=grid,y=as(x,"sf"))
+                             lapply(seq_along(area),
+                                    function(i){
+                                      area[[i]] / raster::cellStats(area[[i]], "sum", na.rm=T) * x$emission[i]
+                                    }) %>%
+                               do.call(raster::stack,.) %>%
+                               raster::calc(sum)
+                           }) %>%
     raster::stack()
 
   return(emission_stack)

@@ -21,7 +21,8 @@ Imports:
     rgdal,
     rgeos,
     terra,
-    pbapply
+    pbapply,
+    exactextractr
 Depends:
     ggplot2,
     ggmap

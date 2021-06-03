@@ -129,11 +129,12 @@ test_that("rasterizing keeps total - polygons", {
   emission.d.farmland <- read.csv(file.path(example_dir(),"farmland_emission_data.csv"))
   support.sp.farmland <- sf::read_sf(file.path(example_dir(),"/farmland_spatial.shp"))
 
-  e <- creainventory::combine(emission.d.farmland, support.sp.farmland)
-  e.short <- e %>% head(10)
+  e <- creainventory::combine(emission.d.farmland, support.sp.farmland) %>%
+    filter(!is.na(emission))
+  e.short <- e %>% filter(!sf::st_is_empty(geometry)) %>% head(1000)
   g <- raster::raster(raster::extent(e), crs=raster::projection(e), nrow=100, ncol=100)
 
-  r <- creainventory::grid.rasterize(e.short, g)
+  r <- creainventory::grid.rasterize(e, g)
 
   # Test emission conservation
   expect_equal(sum(e.short$emission),
