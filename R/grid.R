@@ -12,12 +12,12 @@ grid.read <- function(filename="data/d04.grid.tif"){
 }
 
 
-#' Title
+#' Rasterize emissions (point, line or polygon based)
 #'
 #' @param emission.sp
 #' @param grid
 #'
-#' @return
+#' @return An ABSOLUTE-emission raster (initial unit)
 #' @export
 #'
 #' @examples
