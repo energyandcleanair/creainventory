@@ -163,7 +163,7 @@ grid.rasterize.points <- function(emission.sp, grid, polls=NULL){
 
   emission_stack <- lapply(sps[polls],
          function(x){
-           terra::rasterize(terra::vect(x),
+           terra::rasterize(terra::vect(raster::crop(x,grid)),
                             terra::rast(grid),
                             field="emission",
                             fun=sum) %>%
