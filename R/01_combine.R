@@ -9,8 +9,11 @@
 #'
 #' @examples
 combine <- function(emission.d, support.sp){
+
   support.sp %>%
-    dplyr::right_join(emission.d, by="id") %>%
+    dplyr::right_join(emission.d,
+                      by=intersect(c("id","poll"),
+                                   intersect(names(emissions.d), names(support.sp)))) %>%
     group_by(id, poll) %>%
     do(mutate(., weight = .$weight / sum(.$weight))) %>%
     mutate(emission=emission*weight) %>%
