@@ -12,12 +12,12 @@ grid.read <- function(filename="data/d04.grid.tif"){
 }
 
 
-#' Title
+#' Rasterize emissions (point, line or polygon based)
 #'
 #' @param emission.sp
 #' @param grid
 #'
-#' @return
+#' @return An ABSOLUTE-emission raster (initial unit)
 #' @export
 #'
 #' @examples
@@ -163,7 +163,7 @@ grid.rasterize.points <- function(emission.sp, grid, polls=NULL){
 
   emission_stack <- lapply(sps[polls],
          function(x){
-           terra::rasterize(terra::vect(x),
+           terra::rasterize(terra::vect(raster::crop(x,grid)),
                             terra::rast(grid),
                             field="emission",
                             fun=sum) %>%
