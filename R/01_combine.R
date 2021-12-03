@@ -9,6 +9,7 @@
 #'
 #' @examples
 combine <- function(emission.d, support.sp){
+
   support.sp %>%
     # join by region id (and poll if support is pollutant specific)
     dplyr::right_join(emission.d, by=intersect(c("id","poll"), names(support.sp))) %>%
