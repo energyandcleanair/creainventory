@@ -21,7 +21,7 @@ grid.read <- function(filename="data/d04.grid.tif"){
 #' @export
 #'
 #' @examples
-grid.rasterize <- function(emission.sp, grid, terra_or_raster="terra"){
+grid.rasterize <- function(emission.sp, grid, terra_or_raster="terra", geom_unique_id=NULL){
 
   # Convert to Spatial if need be
   if("sf" %in% class(emission.sp)){
@@ -36,16 +36,18 @@ grid.rasterize <- function(emission.sp, grid, terra_or_raster="terra"){
   # Only keep features with actual emissions to make things faster
   emission.sp <- emission.sp[emission.sp$emission>0,]
 
+  if(!raster::compareCRS(emission.sp, grid)){
+    print("Reprojecting...")
+    emission.sp <- emission.sp %>%
+      sp::spTransform(raster::crs(grid))
+    print("Done")
+  }
 
-  print("Reprojecting...")
-  emission.sp <- emission.sp %>%
-    sp::spTransform(raster::projection(grid))
-  print("Done")
 
   print("Rasterizing...")
   # Cut if need be
   if("SpatialLinesDataFrame" %in% class(emission.sp)){
-    r <- grid.rasterize.lines(emission.sp, grid)
+    r <- grid.rasterize.lines(emission.sp, grid, geom_unique_id=geom_unique_id)
   }
 
   if("SpatialPolygonsDataFrame" %in% class(emission.sp)){
@@ -175,12 +177,7 @@ grid.rasterize.points <- function(emission.sp, grid, polls=NULL){
 }
 
 
-# grid.rasterize.lines <- function(emission.sp, grid, polls=NULL){
-#
-# }
-
-
-grid.rasterize.lines <- function(emission.sp, grid, polls=NULL){
+grid.rasterize.lines <- function(emission.sp, grid, polls=NULL, geom_unique_id=NULL){
 
   if(is.null(polls)){
     polls <- unique(emission.sp$poll)
@@ -188,10 +185,18 @@ grid.rasterize.lines <- function(emission.sp, grid, polls=NULL){
     emission.sp <- emission.sp[emission.sp$poll %in% polls,]
   }
 
+  if(is.null(geom_unique_id)){
+    emission.sp$geom_id_tmp <- 1:nrow(emission.sp)
+    emission.sp.unique <- emission.sp["geom_id_tmp"]
+    geom_unique_id <- "geom_id_tmp"
+  }else{
+    print("Deduplicating geometries")
+    emission.sp.unique <- emission.sp[which(!duplicated(emission.sp[[geom_unique_id]])), geom_unique_id]
+    print("Done")
+  }
 
-  # # Transform to grid crs
-  # emission.sp <- utils.to_spatial(emission.sp) %>%
-  #   sp::spTransform(CRS(projection(grid)))
+  # Add temporary feature id for grouping
+  emission.sp$feature_id_tmp <- 1:nrow(emission.sp)
 
   # Cut lines along grid cells
   print("Polygonizing...")
@@ -201,23 +206,21 @@ grid.rasterize.lines <- function(emission.sp, grid, polls=NULL){
   rsp <- rasterToPolygons(rs)
   print("Done")
 
-  # Add temporary feature id for grouping
-  emission.sp$feature_id_tmp <- 1:nrow(emission.sp)
-
   print("Cutting along grid...")
-  # sf much less memory intensive than raster::intersect
-  # and faster
+  # sf much less memory intensive than raster::intersect and faster
 
   # Chunking it to avoid rgeos_binpredfunc_prepared: maximum returned dense matrix size exceeded
   cutting_successful <- F
   chunk_size <- 1E10
+  emission.sf.unique <- sf::st_as_sf(emission.sp.unique)
+
   while(!cutting_successful){
     tryCatch({
       rsp$chunk <- rsp$i_cell %/% chunk_size
-      emission.sf <- sf::st_as_sf(emission.sp)
+
       rp <- pbapply::pblapply(split(sf::st_as_sf(rsp), rsp$chunk),
                               function(rsp_chunk){
-                                sf::st_intersection(emission.sf,rsp_chunk)
+                                sf::st_intersection(emission.sf.unique, rsp_chunk)
                               }) %>%
         do.call("bind_rows",.)
       cutting_successful <- T
@@ -236,6 +239,13 @@ grid.rasterize.lines <- function(emission.sp, grid, polls=NULL){
   print("Calculating length...")
   rp$length <- sf::st_length(rp, byid=TRUE)
   print("Done")
+
+  print("Attaching emission data back...")
+  rp <- rp %>% left_join(
+    emission.sp %>% as.data.frame()
+  )
+  print("Done")
+
 
   # Weighting accordingly
   print("Weighting by length...")
