@@ -192,6 +192,7 @@ grid.rasterize.lines <- function(emission.sp, grid, polls=NULL, geom_unique_id=N
   }else{
     print("Deduplicating geometries")
     emission.sp.unique <- emission.sp[which(!duplicated(emission.sp[[geom_unique_id]])), geom_unique_id]
+    print(sprintf("Reduced from %d to %d", nrow(emission.sp), nrow(emission.sp.unique)))
     print("Done")
   }
 
