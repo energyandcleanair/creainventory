@@ -221,7 +221,12 @@ grid.rasterize.lines <- function(emission.sp, grid, polls=NULL, geom_unique_id=N
 
       rp <- pbapply::pblapply(split(sf::st_as_sf(rsp), rsp$chunk),
                               function(rsp_chunk){
-                                sf::st_intersection(emission.sf.unique, rsp_chunk)
+                                rsp_chunk_sf <- sf::st_as_sf(rsp_chunk)
+                                # https://github.com/r-spatial/sf/issues/1510
+                                # Had no effect on my MacOs, but trying to unlock Ubuntu
+                                sf::st_precision(emission.sf.unique) <- 1e8
+                                sf::st_precision(rsp_chunk_sf) <- 1e8
+                                sf::st_intersection(emission.sf.unique, rsp_chunk_sf)
                               }) %>%
         do.call("bind_rows",.)
       cutting_successful <- T
