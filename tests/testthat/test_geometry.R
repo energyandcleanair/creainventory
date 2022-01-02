@@ -142,3 +142,11 @@ test_that("rasterizing keeps total - polygons", {
 
 
 })
+
+
+test_that("rasterizing weights are used properly - polygons", {
+
+
+
+})
+
