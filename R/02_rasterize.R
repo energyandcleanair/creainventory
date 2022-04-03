@@ -151,7 +151,12 @@ rasterize.points <- function(emission.sp, grid, polls=NULL){
 
   emission_stack <- lapply(sps[polls],
                            function(x){
-                             terra::rasterize(terra::vect(raster::crop(x,grid)),
+                             cropped_vect <- raster::crop(x,grid)
+                             if(is.null(cropped_vect)){
+                               warning("No feature overlapping")
+                               return(grid %>% raster::`values<-`(0))
+                             }
+                             terra::rasterize(terra::vect(cropped_vect),
                                               terra::rast(grid),
                                               field="emission",
                                               fun=sum) %>%
