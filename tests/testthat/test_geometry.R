@@ -127,6 +127,11 @@ test_that("rasterizing keeps total - lines", {
 test_that("rasterizing keeps total - polygons", {
 
   emission.d.farmland <- read.csv(file.path(example_dir(),"farmland_emission_data.csv"))
+
+  emission.d.farmland <- bind_rows(
+      emission.d.farmland,
+      emission.d.farmland %>% mutate(poll=paste0(poll, "_doubled"), emission=emission*2))
+
   support.sp.farmland <- sf::read_sf(file.path(example_dir(),"/farmland_spatial.shp"))
 
   e <- creainventory::combine(emission.d.farmland, support.sp.farmland) %>%
@@ -134,13 +139,16 @@ test_that("rasterizing keeps total - polygons", {
   e.short <- e %>% filter(!sf::st_is_empty(geometry)) %>% head(1000)
   g <- raster::raster(raster::extent(e), crs=raster::projection(e), nrow=100, ncol=100)
 
-  r <- creainventory::grid.rasterize(e, g)
+  r1 <- creainventory::rasterize(e, g, identical_poll_distribution=F)
+  r2 <- creainventory::rasterize(e, g, identical_poll_distribution=T)
 
   # Test emission conservation
-  expect_equal(sum(e.short$emission),
-               raster::cellStats(r,"sum"))
-
-
+  lapply(split(e.short, e.short$poll), function(x){
+    expect_equal(sum(x$emission),
+                 raster::cellStats(r1[[unique(x$poll)]],"sum"))
+    expect_equal(sum(x$emission),
+                 raster::cellStats(r2[[unique(x$poll)]],"sum"))
+  })
 })
 
 

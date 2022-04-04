@@ -2,12 +2,14 @@
 #'
 #' @param emission.sp
 #' @param grid
+#' @param whether poll have identical spatial distribution. If TRUE, only one poll is rasterized and the others
+#' are then scaled accordingly. Can save a lot of time.
 #'
 #' @return An ABSOLUTE-emission raster (initial unit)
 #' @export
 #'
 #' @examples
-rasterize <- function(emission.sp, grid, terra_or_raster="terra", geom_unique_id=NULL){
+rasterize <- function(emission.sp, grid, terra_or_raster="terra", geom_unique_id=NULL, identical_poll_distribution=FALSE){
 
   # Convert to Spatial if need be
   if("sf" %in% class(emission.sp)){
@@ -20,7 +22,7 @@ rasterize <- function(emission.sp, grid, terra_or_raster="terra", geom_unique_id
   }
 
   # Only keep features with actual emissions to make things faster
-  emission.sp <- emission.sp[emission.sp$emission>0,]
+  emission.sp <- emission.sp[emission.sp$emission!=0,]
 
   if(!raster::compareCRS(emission.sp, grid)){
     print("Reprojecting...")
@@ -37,7 +39,7 @@ rasterize <- function(emission.sp, grid, terra_or_raster="terra", geom_unique_id
   }
 
   if("SpatialPolygonsDataFrame" %in% class(emission.sp)){
-    r <- rasterize.polygons(emission.sp, grid)
+    r <- rasterize.polygons(emission.sp, grid, identical_poll_distribution=identical_poll_distribution)
   }
 
   if("SpatialPointsDataFrame" %in% class(emission.sp)){
@@ -270,7 +272,7 @@ rasterize.lines <- function(emission.sp, grid, polls=NULL, geom_unique_id=NULL){
 }
 
 
-rasterize.polygons <- function(emission.sp, grid, polls=NULL){
+rasterize.polygons <- function(emission.sp, grid, polls=NULL, identical_poll_distribution=FALSE){
 
   # r <- pbapply::pblapply(seq(nrow(emission.sp)),
   #                     function(i){
@@ -311,17 +313,35 @@ rasterize.polygons <- function(emission.sp, grid, polls=NULL){
   #   raster::stack()
 
   # All in one go
-  emission_stack <- pbapply::pblapply(sps[polls],
-                           function(x){
-                             area <- exactextractr::coverage_fraction(x=grid,y=as(x,"sf"))
-                             lapply(seq_along(area),
-                                    function(i){
-                                      area[[i]] / raster::cellStats(area[[i]], "sum", na.rm=T) * x$emission[i]
-                                    }) %>%
-                               do.call(raster::stack,.) %>%
-                               raster::calc(sum)
-                           }) %>%
-    raster::stack()
+  if(!identical_poll_distribution){
+    emission_stack <- pbapply::pblapply(sps[polls],
+                                        function(x){
+                                          area <- exactextractr::coverage_fraction(x=grid,y=as(x,"sf"))
+                                          lapply(seq_along(area),
+                                                 function(i){
+                                                   area[[i]] / raster::cellStats(area[[i]], "sum", na.rm=T) * x$emission[i]
+                                                 }) %>%
+                                            do.call(raster::stack,.) %>%
+                                            raster::calc(sum)
+                                        }) %>%
+      raster::stack()
+  }else{
+    scales <- lapply(sps, function(sp){sum(sp$emission)})
+    scales <- lapply(scales, function(x) x / scales[[1]])
 
+    emission_stack_1 <- pbapply::pblapply(sps[1],
+                                        function(x){
+                                          area <- exactextractr::coverage_fraction(x=grid,y=as(x,"sf"))
+                                          lapply(seq_along(area),
+                                                 function(i){
+                                                   area[[i]] / raster::cellStats(area[[i]], "sum", na.rm=T) * x$emission[i]
+                                                 }) %>%
+                                            do.call(raster::stack,.) %>%
+                                            raster::calc(sum)
+                                        })
+
+    emission_stack <- lapply(scales, function(scale) emission_stack_1[[1]] * scale) %>%
+      raster::stack()
+  }
   return(emission_stack)
 }
