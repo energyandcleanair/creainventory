@@ -322,7 +322,7 @@ rasterize.polygons <- function(emission.sp, grid, polls=NULL, identical_poll_dis
                                                    area[[i]] / raster::cellStats(area[[i]], "sum", na.rm=T) * x$emission[i]
                                                  }) %>%
                                             do.call(raster::stack,.) %>%
-                                            raster::calc(sum)
+                                            raster::calc(sum, na.rm=T)
                                         }) %>%
       raster::stack()
   }else{
