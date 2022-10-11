@@ -1,6 +1,8 @@
 check.fields <- function(d, required_fields){
   if(!all(required_fields %in% names(d))){
-    stop(sprintf("Missing fields: %s", paste(setdiff(required_fields, names(d)),collapse=",")))
+    if(!'geom' %in% names(d)){
+      stop(sprintf("Missing fields: %s", paste(setdiff(required_fields, names(d)),collapse=",")))
+    }
   }
 }
 
