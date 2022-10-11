@@ -11,14 +11,14 @@
 #' @examples
 rasterize <- function(emission.sp, grid, terra_or_raster="terra", geom_unique_id=NULL, identical_poll_distribution=FALSE){
 
+  if(is.na(raster::crs(emission.sp))){
+    warning("No CRS set in emission.sp. Assuming EPSG:4326")
+    emission.sp <- sf::st_set_crs(emission.sp, "EPSG:4326")
+  }
+
   # Convert to Spatial if need be
   if("sf" %in% class(emission.sp)){
     emission.sp <- as(emission.sp, "Spatial")
-  }
-
-  if(is.na(raster::crs(emission.sp))){
-    warning("No CRS set in emission.sp. Assuming EPSG4326")
-    sp::proj4string(emission.sp) <- sp::CRS("+init=epsg:4326")
   }
 
   # Only keep features with actual emissions to make things faster
